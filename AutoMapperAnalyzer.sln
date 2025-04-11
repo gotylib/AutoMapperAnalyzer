@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoMapperAnalyzer", "AutoMapperAnalyzer\AutoMapperAnalyzer\AutoMapperAnalyzer.csproj", "{8B675C21-6ACA-48A3-B13A-04BE9414FF30}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoMapperAnalyzer.Sample", "AutoMapperAnalyzer\AutoMapperAnalyzer.Sample\AutoMapperAnalyzer.Sample.csproj", "{BFFB10EE-1DF4-48DD-9819-C6BA6E6DAC73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoMapperAnalyzer.Tests", "AutoMapperAnalyzer\AutoMapperAnalyzer.Tests\AutoMapperAnalyzer.Tests.csproj", "{805F2E73-BA50-49E8-916C-870A6441E1B2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B675C21-6ACA-48A3-B13A-04BE9414FF30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B675C21-6ACA-48A3-B13A-04BE9414FF30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B675C21-6ACA-48A3-B13A-04BE9414FF30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B675C21-6ACA-48A3-B13A-04BE9414FF30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFFB10EE-1DF4-48DD-9819-C6BA6E6DAC73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFFB10EE-1DF4-48DD-9819-C6BA6E6DAC73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFFB10EE-1DF4-48DD-9819-C6BA6E6DAC73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFFB10EE-1DF4-48DD-9819-C6BA6E6DAC73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{805F2E73-BA50-49E8-916C-870A6441E1B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{805F2E73-BA50-49E8-916C-870A6441E1B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{805F2E73-BA50-49E8-916C-870A6441E1B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{805F2E73-BA50-49E8-916C-870A6441E1B2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
