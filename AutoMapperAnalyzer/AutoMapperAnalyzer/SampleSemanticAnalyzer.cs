@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -49,30 +50,6 @@ namespace AutoMapperAnalyzer
             context.RegisterOperationAction(AnalyzeInvocation, OperationKind.Invocation);
         }
 
-        private void AnalyzeInvocation(OperationAnalysisContext context)
-        {
-            if (context.Operation is not IInvocationOperation invocation ||
-                !invocation.TargetMethod.Name.Contains("CreateMap"))
-            {
-                return;
-            }
-
-            // Получаем generic-аргументы, если вызов выглядит как CreateMap<TSource, TDest>
-            if (invocation.TargetMethod is not IMethodSymbol methodSymbol ||
-                methodSymbol.TypeArguments.Length != 2)
-            {
-                return;
-            }
-
-            var sourceType = methodSymbol.TypeArguments[0];
-            var destinationType = methodSymbol.TypeArguments[1];
-
-            // Проверяем, есть ли ForMember/Ignore для свойств Destination
-            var hasExplicitMappings = CheckExplicitMappings(invocation);
-
-            CheckPropertyMappings(context, sourceType, destinationType, invocation.Syntax.GetLocation(), hasExplicitMappings);
-        }
-
         // Проверяем, используется ли ForMember или Ignore для маппинга свойств
         private bool CheckExplicitMappings(IInvocationOperation invocation)
         {
@@ -90,46 +67,39 @@ namespace AutoMapperAnalyzer
 
             return false;
         }
+    private void CheckPropertyMappings(
+    OperationAnalysisContext context,
+    ITypeSymbol sourceType,
+    ITypeSymbol destinationType,
+    Location location,
+    bool hasExplicitMappings)
+    {
+        var sourceProperties = sourceType.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => !p.IsReadOnly)
+            .ToList();
+        
+        var destinationProperties = destinationType.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => !p.IsReadOnly)
+            .ToList();
 
-        private void CheckPropertyMappings(
-            OperationAnalysisContext context,
-            ITypeSymbol sourceType,
-            ITypeSymbol destinationType,
-            Location location,
-            bool hasExplicitMappings)
+        foreach (var destProp in destinationProperties)
         {
-            var sourceProperties = sourceType.GetMembers().OfType<IPropertySymbol>().ToList();
-            var destinationProperties = destinationType.GetMembers().OfType<IPropertySymbol>().ToList();
+            var sourceProp = sourceProperties.FirstOrDefault(p => 
+                string.Equals(p.Name, destProp.Name, StringComparison.OrdinalIgnoreCase));
 
-            foreach (var destProp in destinationProperties)
+            if (sourceProp == null)
             {
-                var sourceProp = sourceProperties.FirstOrDefault(p => p.Name == destProp.Name);
+                // Property exists only in destination type
+                context.ReportDiagnostic(Diagnostic.Create(
+                    UnmappedPropertyRule,
+                    location,
+                    destProp.Name,
+                    destinationType.Name));
 
-                if (sourceProp == null)
+                if (!hasExplicitMappings)
                 {
-                    // Свойство не найдено в Source — выдаем предупреждение
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        UnmappedPropertyRule,
-                        location,
-                        destProp.Name,
-                        destinationType.Name));
-                }
-                else if (!IsTypeCompatible(sourceProp.Type, destProp.Type))
-                {
-                    // Типы несовместимы — ошибка
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        TypeMismatchRule,
-                        location,
-                        sourceType.Name,
-                        sourceProp.Name,
-                        sourceProp.Type.Name,
-                        destinationType.Name,
-                        destProp.Name,
-                        destProp.Type.Name));
-                }
-                else if (!hasExplicitMappings)
-                {
-                    // Если нет явного маппинга (ForMember/Ignore) — предупреждение
                     context.ReportDiagnostic(Diagnostic.Create(
                         MissingMappingRule,
                         location,
@@ -137,7 +107,86 @@ namespace AutoMapperAnalyzer
                         destinationType.Name));
                 }
             }
+            else if (!IsTypeCompatible(sourceProp.Type, destProp.Type))
+            {
+                // Type mismatch
+                context.ReportDiagnostic(Diagnostic.Create(
+                    TypeMismatchRule,
+                    location,
+                    sourceType.Name,
+                    sourceProp.Name,
+                    sourceProp.Type.Name,
+                    destinationType.Name,
+                    destProp.Name,
+                    destProp.Type.Name));
+            }
         }
+    }
+
+    private void AnalyzeInvocation(OperationAnalysisContext context)
+    {
+        if (context.Operation is not IInvocationOperation invocation ||
+            !invocation.TargetMethod.Name.Contains("CreateMap"))
+        {
+            return;
+        }
+
+        if (invocation.TargetMethod is not IMethodSymbol methodSymbol ||
+            methodSymbol.TypeArguments.Length != 2)
+        {
+            return;
+        }
+
+        var sourceType = methodSymbol.TypeArguments[0];
+        var destinationType = methodSymbol.TypeArguments[1];
+
+        // Проверяем всю цепочку вызовов на наличие явных маппингов
+        var hasExplicitMappings = CheckExplicitMappingsInChain(invocation);
+        var isReverseMap = CheckForReverseMap(invocation);
+
+        // Проверяем прямой маппинг
+        CheckPropertyMappings(context, sourceType, destinationType, 
+            invocation.Syntax.GetLocation(), hasExplicitMappings);
+
+        // Если есть ReverseMap, проверяем обратный маппинг
+        if (isReverseMap)
+        {
+            CheckPropertyMappings(context, destinationType, sourceType, 
+                invocation.Syntax.GetLocation(), hasExplicitMappings);
+        }
+    }
+
+    private bool CheckExplicitMappingsInChain(IInvocationOperation invocation)
+    {
+        // Проверяем всю цепочку вызовов
+        var currentOperation = invocation.Parent as IInvocationOperation;
+        while (currentOperation != null)
+        {
+            if (currentOperation.TargetMethod.Name == "ForMember" || 
+                currentOperation.TargetMethod.Name == "Ignore")
+            {
+                return true;
+            }
+            currentOperation = currentOperation.Parent as IInvocationOperation;
+        }
+        return false;
+    }
+
+    private bool CheckForReverseMap(IInvocationOperation invocation)
+    {
+        var currentOperation = invocation.Parent as IInvocationOperation;
+        while (currentOperation != null)
+        {
+            if (currentOperation.TargetMethod.Name == "ReverseMap")
+            {
+                return true;
+            }
+            currentOperation = currentOperation.Parent as IInvocationOperation;
+        }
+        return false;
+    }
+
+
 
         private bool IsTypeCompatible(ITypeSymbol sourceType, ITypeSymbol destType)
         {
