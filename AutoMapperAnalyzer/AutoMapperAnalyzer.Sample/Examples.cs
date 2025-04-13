@@ -12,14 +12,26 @@ public class a : Profile
     public a()
     {
         CreateMap<Examples.UserDto, Examples.UserEntity>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ReverseMap();;
     }
 }
 
 public class Examples
 {
-    public class UserDto { public string Name { get; set; } }
-    public class UserEntity { public string Name { get; set; }}// Ошибка: int → string
+    public class UserDto
+    {
+        public string Name { get; set; }
+        
+    }
+
+    public class UserEntity
+    {
+        public string Name { get; set; }
+        
+        public string Email { get; set; }
+        
+    }// Ошибка: int → string
     
     public void ToStars()
     {
