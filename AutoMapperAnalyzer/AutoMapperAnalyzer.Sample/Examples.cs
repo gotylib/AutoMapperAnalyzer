@@ -13,7 +13,7 @@ public class a : Profile
     {
         CreateMap<Examples.UserDto, Examples.UserEntity>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-            .ReverseMap();;
+            .ReverseMap();
     }
 }
 
