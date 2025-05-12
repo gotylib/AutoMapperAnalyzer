@@ -12,7 +12,7 @@
 
         <!-- Метаданные пакета -->
         <PackageId>AutoMapperAnalyzer</PackageId>
-        <Version>1.0.0</Version> <!-- Версия пакета -->
+        <Version>1.0.2</Version> <!-- Версия пакета -->
         <Authors>YourName</Authors>
         <Description>Static analyzer for AutoMapper that detects common issues and potential problems in mapping configurations.</Description>
         <PackageTags>analyzer;automapper;roslyn;code-analysis</PackageTags>

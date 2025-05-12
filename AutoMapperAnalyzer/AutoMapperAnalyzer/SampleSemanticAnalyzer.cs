@@ -38,7 +38,7 @@ namespace AutoMapperAnalyzer
             "Type mismatch in mapping",
             "Cannot map '{0}.{1}' ({2}) to '{3}.{4}' ({5})",
             "Mapping",
-            DiagnosticSeverity.Warning,
+            DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
         // Новое правило: если свойство Destination не имеет маппинга и не игнорируется
@@ -237,7 +237,7 @@ namespace AutoMapperAnalyzer
                 if (sourceProp == null)
                 {
                     // Проверяем есть ли маппинг для типа свойства
-                    if (!HasPropertyTypeMapping(destProp.Type, allMappings))
+                    if (!HasPropertyTypeMapping(destProp.Type, allMappings) && !IsCollectionWithMappedElementType(destProp.Type, allMappings))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             MissingMappingRule,
@@ -248,7 +248,7 @@ namespace AutoMapperAnalyzer
                 }
                 else if (!IsTypeCompatible(sourceProp.Type, destProp.Type))
                 {
-                    if (!HasTypeMapping(sourceProp.Type, destProp.Type, allMappings))
+                    if (!HasTypeMapping(sourceProp.Type, destProp.Type, allMappings) && !IsCollectionWithMappedElementType(destProp.Type, allMappings))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             TypeMismatchRule,
@@ -269,6 +269,42 @@ namespace AutoMapperAnalyzer
         {
             return allMappings.Any(m => 
                 SymbolEqualityComparer.Default.Equals(m.Source, propertyType));
+        }
+        
+        private bool IsCollectionWithMappedElementType(ITypeSymbol propertyType, 
+            List<(ITypeSymbol Source, ITypeSymbol Destination)> allMappings)
+        {
+            // Если это не коллекции - сразу false
+            if (!IsCollectionType(propertyType))
+                return false;
+
+            // Получаем типы элементов коллекций
+            var propertyElementType = GetCollectionElementType(propertyType);
+            
+            return HasPropertyTypeMapping(propertyElementType, allMappings);
+        }
+        
+        // Определяет, является ли тип коллекцией
+        private bool IsCollectionType(ITypeSymbol type)
+        {
+            return type is IArrayTypeSymbol || 
+                   type.AllInterfaces.Any(i => 
+                       i.SpecialType == SpecialType.System_Collections_Generic_ICollection_T ||
+                       i.SpecialType == SpecialType.System_Collections_IEnumerable);
+        }
+        
+        // Получает тип элементов коллекции
+        private ITypeSymbol GetCollectionElementType(ITypeSymbol type)
+        {
+            switch (type)
+            {
+                case IArrayTypeSymbol arrayType:
+                    return arrayType.ElementType;
+                case INamedTypeSymbol namedType when namedType.IsGenericType:
+                    return namedType.TypeArguments.FirstOrDefault();
+                default:
+                    return type;
+            }
         }
         private void AnalyzeInvocationCreateMappings(OperationAnalysisContext context)
         {

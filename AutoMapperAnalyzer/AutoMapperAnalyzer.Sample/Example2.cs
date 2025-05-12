@@ -27,7 +27,7 @@ namespace AutoMapperAnalyzer.Sample.too
         {
             public string Name { get; set; }
 
-            public Sample.Examples.C a { get; set; }
+            public ICollection<Sample.Examples.C> a { get; set; }
 
         }
 
@@ -35,7 +35,7 @@ namespace AutoMapperAnalyzer.Sample.too
         {
             public string Namg { get; set; }
 
-            public Sample.Examples.D a { get; set; }
+            public ICollection<Sample.Examples.D> a { get; set; }
         }
 
         public class A
