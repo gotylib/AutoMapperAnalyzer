@@ -12,8 +12,8 @@
 
         <!-- Метаданные пакета -->
         <PackageId>AutoMapperAnalyzer</PackageId>
-        <Version>1.0.2</Version> <!-- Версия пакета -->
-        <Authors>YourName</Authors>
+        <Version>1.0.3</Version> <!-- Версия пакета -->
+        <Authors>Gleb</Authors>
         <Description>Static analyzer for AutoMapper that detects common issues and potential problems in mapping configurations.</Description>
         <PackageTags>analyzer;automapper;roslyn;code-analysis</PackageTags>
         <PackageProjectUrl>https://github.com/gotylib/AutoMapperAnalyzer</PackageProjectUrl>

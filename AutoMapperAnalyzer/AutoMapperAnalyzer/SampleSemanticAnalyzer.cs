@@ -236,7 +236,7 @@ namespace AutoMapperAnalyzer
 
                 if (sourceProp == null)
                 {
-                    // Проверяем есть ли маппинг для типа свойства
+                    // Check if property type has mapping
                     if (!HasPropertyTypeMapping(destProp.Type, allMappings) && !IsCollectionWithMappedElementType(destProp.Type, allMappings))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
@@ -246,19 +246,28 @@ namespace AutoMapperAnalyzer
                             destinationType.Name));
                     }
                 }
-                else if (!IsTypeCompatible(sourceProp.Type, destProp.Type))
+                else 
                 {
-                    if (!HasTypeMapping(sourceProp.Type, destProp.Type, allMappings) && !IsCollectionWithMappedElementType(destProp.Type, allMappings))
+                    // Skip type checking for properties with FromMember, FromPath, or explicit mapping
+                    var hasExplicitMapping = invocationChain.Any(op => 
+                        op.TargetMethod.Name is "ForMember" or "ForPath" && 
+                        GetMappedPropertyName(op)?.Equals(destProp.Name, StringComparison.OrdinalIgnoreCase) == true);
+                    
+                    if (!hasExplicitMapping && !IsTypeCompatible(sourceProp.Type, destProp.Type))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(
-                            TypeMismatchRule,
-                            location,
-                            sourceType.Name,
-                            sourceProp.Name,
-                            sourceProp.Type.Name,
-                            destinationType.Name,
-                            destProp.Name,
-                            destProp.Type.Name));
+                        if (!HasTypeMapping(sourceProp.Type, destProp.Type, allMappings) && 
+                            !IsCollectionWithMappedElementType(destProp.Type, allMappings))
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(
+                                TypeMismatchRule,
+                                location,
+                                sourceType.Name,
+                                sourceProp.Name,
+                                sourceProp.Type.Name,
+                                destinationType.Name,
+                                destProp.Name,
+                                destProp.Type.Name));
+                        }
                     }
                 }
             }
@@ -556,15 +565,24 @@ namespace AutoMapperAnalyzer
 
         private bool IsTypeCompatible(ITypeSymbol sourceType, ITypeSymbol destType)
         {
-            // (прежняя реализация)
-            if (SymbolEqualityComparer.Default.Equals(sourceType, destType))
+            // Handle nullable to non-nullable conversion
+            var sourceUnderlyingType = (sourceType as INamedTypeSymbol)?.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T 
+                ? (sourceType as INamedTypeSymbol).TypeArguments[0] 
+                : sourceType;
+    
+            var destUnderlyingType = (destType as INamedTypeSymbol)?.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T 
+                ? (destType as INamedTypeSymbol).TypeArguments[0] 
+                : destType;
+
+            // Check underlying types
+            if (SymbolEqualityComparer.Default.Equals(sourceUnderlyingType, destUnderlyingType))
                 return true;
 
-            if (IsNumericType(sourceType) && IsNumericType(destType))
+            if (IsNumericType(sourceUnderlyingType) && IsNumericType(destUnderlyingType))
                 return true;
 
-            if ((sourceType.Name == "Guid" && destType.SpecialType == SpecialType.System_String) ||
-                (sourceType.SpecialType == SpecialType.System_String && destType.Name == "Guid"))
+            if ((sourceUnderlyingType.Name == "Guid" && destUnderlyingType.SpecialType == SpecialType.System_String) ||
+                (sourceUnderlyingType.SpecialType == SpecialType.System_String && destUnderlyingType.Name == "Guid"))
                 return true;
 
             return false;

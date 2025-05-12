@@ -1,9 +1,6 @@
 ﻿using AutoMapper;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace AutoMapperAnalyzer.Sample.too
 {
@@ -40,7 +37,7 @@ namespace AutoMapperAnalyzer.Sample.too
 
         public class A
         {
-            public string FirstName { get; set; }
+            public string? FirstName { get; set; }
 
             public string LastName { get; set; }
         }
