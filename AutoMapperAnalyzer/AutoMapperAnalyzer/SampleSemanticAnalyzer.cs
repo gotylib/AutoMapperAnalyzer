@@ -237,7 +237,7 @@ namespace AutoMapperAnalyzer
                 if (sourceProp == null)
                 {
                     // Check if property type has mapping
-                    if (!HasPropertyTypeMapping(destProp.Type, allMappings) && !IsCollectionWithMappedElementType(destProp.Type, allMappings))
+                    if (!HasPropertyTypeMapping(destProp.Type, allMappings))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             MissingMappingRule,
